@@ -1,0 +1,135 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+}
+
+.header {
+  display: flex;
+  background-color: #002d5c;
+  justify-content: center;
+  align-items: center;
+}
+
+.header h1 {
+  color: #ffffff;
+  font-size: 24px;
+  text-align: center;
+}
+
+.title {
+  margin-bottom: 10px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+}
+
+.primarybutton {
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: none;
+  background: #002d5c;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.secondarybutton {
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: none;
+  background: #870000;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.group {
+  display: flex;
+  gap: 10px;
+  padding-bottom: 10px;
+}
+
+.input-field {
+  margin-right: 10px;
+  border-radius: 20px;
+}
+
+.rounded-dropdown {
+  border-radius: 12px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+/*CUSTOM*/
+.GleanChatPage {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#chat-container {
+  width: 100%;
+  max-width: 600px;
+  /* Adjust the max-width as needed */
+  padding: 20px;
+  background-color: #ededed;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+#message-container {
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.message {
+  margin: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  max-width: 70%;
+}
+
+.sent {
+  background-color: #007bff;
+  color: white;
+  align-self: flex-end;
+}
+
+.received {
+  background-color: #ffffff;
+  color: black;
+  align-self: flex-start;
+}
+
+#input-container {
+  display: flex;
+  align-items: center;
+}
+
+#messageInput {
+  width: 3000px;
+  height: 40px;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  resize: none;
+}
+
+#sendButton {
+  padding: 10px 20px;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+/*CUSTOM*/
