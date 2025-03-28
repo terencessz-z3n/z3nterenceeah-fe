@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Smooch from 'smooch';
-import { jwtDecode } from 'jwt-decode';
+import UltimateChat from 'https://widget.ultimate.ai/sdk/index.mjs';
 
 const MainPage = () => {
     // Define states
@@ -62,8 +62,8 @@ const MainPage = () => {
     // Utilities functions
     const handleClearBrowserStorage = () => {
         window.zE('messenger', 'logoutUser');
-        Smooch.logout();
-        Smooch.destroy();
+        //Smooch.logout();
+        //Smooch.destroy();
         localStorage.clear();
         sessionStorage.clear();
         window.location.reload();
@@ -171,26 +171,53 @@ const MainPage = () => {
         bootstrapLink.href = 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
         document.head.appendChild(bootstrapLink);
 
+        // Adding Ultimate Web Widget script
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = 'https://widget.ultimate.ai/sdk/index.mjs';
+        script.onload = () => {
+            UltimateChat.Initialize({
+                botId: '6773849286d15fab7828f2c2',
+                theme: {
+                    'actions': '#4C67D3',
+                    'actions-hover': '#1833AB',
+                    'header-text': '#FFFFFF',
+                    'chat-button': '#151A1E',
+                    'header': '#063940',
+                    'chat-border-radius': '12px'
+                },
+                navbar: {
+                    avatarUrl: 'https://www.ultimate.ai/hubfs/raw_assets/public/ultimate/favicon/apple-touch-icon-152x152.png',
+                    title: 'AI agents (Ultimate)'
+                },
+                recoverConversation: true,
+                messageGeneratedAdditionalInfo: false,
+                showLlmSources: true,
+                showAIAnswerLabel: true,
+                allowSoundNotifications: true,
+                chatPosition: 'bottom-right'
+            });
+        };
+        document.body.appendChild(script);
+
         // Adding Zendesk Web Widget script
         const zendeskScript = document.createElement('script');
         zendeskScript.id = 'ze-snippet';
         zendeskScript.src = 'https://static.zdassets.com/ekr/snippet.js?key=6b8220bb-b66e-4385-bff3-c4185d610542';
         document.body.appendChild(zendeskScript);
 
-
         // Adding Smooch initialization
-        Smooch.init({
+        /*Smooch.init({
             integrationId: '66a7bade5a4522eaeddeacfa',
             businessName: 'Sunco Bot',
             businessIconUrl: 'https://z3ntscap.zendesk.com/hc/theming_assets/01JENNYVQQ12T10F4FCJGDA8MZ'
-        });
+        });*/
 
         setTimeout(() => {
             const messageToken = sessionStorage.getItem('messageToken');
             const suncoToken = sessionStorage.getItem('suncoToken');
             const messageTokenExists = sessionStorage.getItem('messageTokenExists') === 'true';
             const suncoTokenExists = sessionStorage.getItem('suncoTokenExists') === 'true';
-
 
             setMessageTokenExists(messageTokenExists);
             setSuncoTokenExists(suncoTokenExists);
@@ -218,12 +245,12 @@ const MainPage = () => {
             window.zE('messenger:set', 'conversationFields', [
             ]);
 
-            if (suncoToken) {
+            /*if (suncoToken) {
                 const decodedSuncoToken = jwtDecode(suncoToken);
                 const external_id = decodedSuncoToken.external_id;
 
                 Smooch.login(external_id, suncoToken);
-            }
+            }*/
         }, 1000);
     }, []);
 
