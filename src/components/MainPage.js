@@ -266,13 +266,16 @@ const MainPage = () => {
                         <button type='submit' disabled={!isFormValid} className='primarybutton'>{isFormValid ? 'Login' : 'Please fill in credentials to login'}</button>
                     </form>
                 </div>
+                {/*
                 <div className='group'>
                     <div><label><b>Sunco Token Exists?</b>{suncoTokenExists ? ' True' : ' False'}</label></div>
                 </div>
+                */}
                 <div className='group'>
                     <div><label><b>Message Token Exists?</b> {messageTokenExists ? ' True' : ' False'}</label></div>
                 </div>
             </div>
+            {/*
             <div className='container'>
                 <h2 className='title'>Sunco Web Widget</h2>
                 <div className='group'>
@@ -281,6 +284,7 @@ const MainPage = () => {
                     <button className='secondarybutton' onClick={() => handleSuncoWidgetLogout()}>Logout</button>
                 </div>
             </div>
+            */}
             <div className='container'>
                 <h2 className='title'>Zendesk Web Widget</h2>
                 <div className='group'>
