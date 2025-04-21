@@ -1,28 +1,27 @@
 import React, { useEffect, useState } from 'react';
+import { Alert } from 'react-bootstrap';
 import Smooch from 'smooch';
 import UltimateChat from 'https://widget.ultimate.ai/sdk/index.mjs';
 
 const MainPage = () => {
-    // Define states
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isFormValid, setIsFormValid] = useState(false);
     const [locale, setLocale] = useState(null);
     const [showMessagingWidgetConversationField, setShowMessagingWidgetConversationalField] = useState(false);
     const [messagingWidgetConversationFields, setMessagingWidgetConversationalField] = useState('');
-    const [messageTokenExists, setMessageTokenExists] = useState(false);
     const [suncoTokenExists, setSuncoTokenExists] = useState(false);
+    const [messageToken, setMessageToken] = useState('');
 
-    // Messaging Widget functions 
-    const handleMessagingWidgetAction = async (action) => {
+    const handleMessagingWidgetAction = (action) => {
         window.zE('messenger', action);
-    }
+    };
 
     const handleMessagingWidgetLogout = () => {
         window.zE('messenger', 'logoutUser');
         sessionStorage.removeItem('messageToken');
-        setMessageTokenExists(false);
-    }
+        setMessageToken('');
+    };
 
     const handleMessagingWidgetLocale = (locale) => {
         window.zE('messenger:set', 'locale', locale);
@@ -41,44 +40,32 @@ const MainPage = () => {
         handleMessagingWidgetLocale(event.target.value);
     };
 
-    // Sunco Widget functions 
     const handleSuncoWidgetAction = (action) => {
-        switch (action) {
-            case "open":
-                Smooch.open();
-                break;
-            case "close":
-                Smooch.close();
-                break;
-        }
-    }
+        if (action === "open") Smooch.open();
+        if (action === "close") Smooch.close();
+    };
 
     const handleSuncoWidgetLogout = () => {
         Smooch.logout();
         sessionStorage.removeItem('suncoToken');
         setSuncoTokenExists(false);
-    }
+    };
 
-    // Utilities functions
     const handleClearBrowserStorage = () => {
         window.zE('messenger', 'logoutUser');
-        //Smooch.logout();
-        //Smooch.destroy();
         localStorage.clear();
         sessionStorage.clear();
+        setMessageToken('');
+        setSuncoTokenExists(false);
         window.location.reload();
     };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        if (name === 'email') setEmail(value);
+        if (name === 'password') setPassword(value);
 
-        if (name === 'email') {
-            setEmail(value);
-        } else if (name === 'password') {
-            setPassword(value);
-        }
-
-        const isValid = email.trim() !== '' && password.trim() !== '';
+        const isValid = value.trim() !== '' && (name === 'email' ? password.trim() : email.trim()) !== '';
         setIsFormValid(isValid);
     };
 
@@ -88,26 +75,19 @@ const MainPage = () => {
         try {
             const response = await fetch('http://localhost:3001/auth', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    email,
-                    password
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
             });
 
             const data = await response.json();
 
             sessionStorage.setItem('messageToken', data.messageToken);
             sessionStorage.setItem('suncoToken', data.suncoToken);
-            sessionStorage.setItem('messageTokenExists', !!data.messageToken);
-            sessionStorage.setItem('suncoTokenExists', !!data.suncoToken);
             sessionStorage.setItem('email', email);
             sessionStorage.setItem('password', password);
 
-            setMessageTokenExists(!!data.messageToken);
             setSuncoTokenExists(!!data.suncoToken);
+            setMessageToken(data.messageToken);
 
             window.location.href = '/';
         } catch (error) {
@@ -121,15 +101,12 @@ const MainPage = () => {
         try {
             const response = await fetch(`http://localhost:3001/auth/jwtsso?return_to=https://z3ntscap.tstechlab.com/hc/en-us`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ "messageToken": messageToken })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messageToken })
             });
 
             if (response.ok) {
                 const data = await response.json();
-                console.log(data)
                 window.location.href = data.redirectURL;
             } else {
                 console.error('Failed to get redirect URL');
@@ -145,33 +122,31 @@ const MainPage = () => {
 
         const response = await fetch('http://localhost:3001/auth', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                email,
-                password
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
         });
 
         return response.json();
     };
 
     useEffect(() => {
-        // Adding jQuery script
+        // Inject scripts and styles
         const jqueryScript = document.createElement('script');
         jqueryScript.src = 'https://code.jquery.com/jquery-3.3.1.js';
         jqueryScript.integrity = 'sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=';
         jqueryScript.crossOrigin = 'anonymous';
         document.body.appendChild(jqueryScript);
 
-        // Adding Bootstrap CSS
         const bootstrapLink = document.createElement('link');
         bootstrapLink.rel = 'stylesheet';
         bootstrapLink.href = 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
         document.head.appendChild(bootstrapLink);
 
-        // Adding Ultimate Web Widget script
+        const biLink = document.createElement('link');
+        biLink.rel = 'stylesheet';
+        biLink.href = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css';
+        document.head.appendChild(biLink);
+
         const script = document.createElement('script');
         script.type = 'module';
         script.src = 'https://widget.ultimate.ai/sdk/index.mjs';
@@ -200,57 +175,29 @@ const MainPage = () => {
         };
         document.body.appendChild(script);
 
-        // Adding Zendesk Web Widget script
         const zendeskScript = document.createElement('script');
         zendeskScript.id = 'ze-snippet';
         zendeskScript.src = 'https://static.zdassets.com/ekr/snippet.js?key=6b8220bb-b66e-4385-bff3-c4185d610542';
         document.body.appendChild(zendeskScript);
 
-        // Adding Smooch initialization
-        /*Smooch.init({
-            integrationId: '66a7bade5a4522eaeddeacfa',
-            businessName: 'Sunco Bot',
-            businessIconUrl: 'https://z3ntscap.zendesk.com/hc/theming_assets/01JENNYVQQ12T10F4FCJGDA8MZ'
-        });*/
-
         setTimeout(() => {
-            const messageToken = sessionStorage.getItem('messageToken');
-            const suncoToken = sessionStorage.getItem('suncoToken');
-            const messageTokenExists = sessionStorage.getItem('messageTokenExists') === 'true';
-            const suncoTokenExists = sessionStorage.getItem('suncoTokenExists') === 'true';
+            const storedMessageToken = sessionStorage.getItem('messageToken');
+            const storedSuncoToken = sessionStorage.getItem('suncoToken');
 
-            setMessageTokenExists(messageTokenExists);
-            setSuncoTokenExists(suncoTokenExists);
+            setMessageToken(storedMessageToken || '');
+            setSuncoTokenExists(!!storedSuncoToken);
 
             window.zE('messenger', 'loginUser', async function jwtCallback(callback) {
                 fetchJWTToken()
                     .then(data => {
-                        const messageToken = data.messageToken;
-                        console.log("Message Token: " + messageToken);
-                        callback(messageToken);
+                        setMessageToken(data.messageToken);
+                        callback(data.messageToken);
                     })
-                    .catch(error => {
-                        console.log("Error: " + error);
-                    });
-            }, function loginCallback(error) {
-                /*if (error) {
-                    const { type, reason, message } = error
-                    console.error(`Error logging in: ${type} - ${reason} - ${message}`)
-                }*/
+                    .catch(error => console.log("Error: " + error));
             });
 
-            window.zE('messenger:set', 'conversationTags', [
-            ]);
-
-            window.zE('messenger:set', 'conversationFields', [
-            ]);
-
-            /*if (suncoToken) {
-                const decodedSuncoToken = jwtDecode(suncoToken);
-                const external_id = decodedSuncoToken.external_id;
-
-                Smooch.login(external_id, suncoToken);
-            }*/
+            window.zE('messenger:set', 'conversationTags', []);
+            window.zE('messenger:set', 'conversationFields', []);
         }, 1000);
     }, []);
 
@@ -259,32 +206,31 @@ const MainPage = () => {
             <header className='header'><h1>Dashboard</h1></header>
             <div className='container'>
                 <h2 className='title'>Login</h2>
-                <div className='group'>
-                    <form onSubmit={handleLogin}>
-                        <input type='text' name='email' placeholder='Username' value={email} onChange={handleInputChange} className='input-field' />
-                        <input type='password' name='password' placeholder='Password' value={password} onChange={handleInputChange} className='input-field' />
-                        <button type='submit' disabled={!isFormValid} className='primarybutton'>{isFormValid ? 'Login' : 'Please fill in credentials to login'}</button>
-                    </form>
-                </div>
-                {/*
-                <div className='group'>
-                    <div><label><b>Sunco Token Exists?</b>{suncoTokenExists ? ' True' : ' False'}</label></div>
-                </div>
-                */}
-                <div className='group'>
-                    <div><label><b>Message Token Exists?</b> {messageTokenExists ? ' True' : ' False'}</label></div>
-                </div>
+                <form onSubmit={handleLogin}>
+                    <input type='text' name='email' placeholder='Username' value={email} onChange={handleInputChange} className='input-field' />
+                    <input type='password' name='password' placeholder='Password' value={password} onChange={handleInputChange} className='input-field' />
+                    <button type='submit' disabled={!isFormValid} className='primarybutton'>
+                        {isFormValid ? 'Login' : 'Please fill in credentials to login'}
+                    </button>
+                </form>
+
+                {!!messageToken && (
+                    <Alert variant="info" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', marginTop: '10px', position: 'relative', paddingRight: '40px' }}>
+                        <strong>Message Token:</strong><br />
+                        <span id="messageTokenText">{messageToken}</span>
+                        <i className="bi bi-clipboard" title="Copy to clipboard"
+                            style={{
+                                cursor: 'pointer',
+                                color: '#22616e',
+                                position: 'absolute',
+                                top: '10px',
+                                right: '10px',
+                                fontSize: '1.2rem',
+                            }}></i>
+                    </Alert>
+                )}
             </div>
-            {/*
-            <div className='container'>
-                <h2 className='title'>Sunco Web Widget</h2>
-                <div className='group'>
-                    <button className='primarybutton' onClick={() => handleSuncoWidgetAction('open')}>Open</button>
-                    <button className='primarybutton' onClick={() => handleSuncoWidgetAction('close')}>Close</button>
-                    <button className='secondarybutton' onClick={() => handleSuncoWidgetLogout()}>Logout</button>
-                </div>
-            </div>
-            */}
+
             <div className='container'>
                 <h2 className='title'>Zendesk Web Widget</h2>
                 <div className='group'>
@@ -292,7 +238,7 @@ const MainPage = () => {
                     <button className='primarybutton' onClick={() => handleMessagingWidgetAction('close')}>Close</button>
                     <button className='primarybutton' onClick={() => handleMessagingWidgetAction('show')}>Show</button>
                     <button className='primarybutton' onClick={() => handleMessagingWidgetAction('hide')}>Hide</button>
-                    <button className='secondarybutton' onClick={() => handleMessagingWidgetLogout()}>Logout</button>
+                    <button className='secondarybutton' onClick={handleMessagingWidgetLogout}>Logout</button>
                 </div>
                 <div className='group'>
                     <button className='primarybutton' onClick={() => handleMessagingWidgetLocale(locale)}>Set Locale</button>
@@ -306,18 +252,20 @@ const MainPage = () => {
                     </select>
                 </div>
                 <div className='group'>
-                    <button className='primarybutton' onClick={() => handleMessagingWidgetConversationalFields(locale)}>Set Conversational Fields</button>
+                    <button className='primarybutton' onClick={handleMessagingWidgetConversationalFields}>Set Conversational Fields</button>
                 </div>
                 <div className='group'>
                     <label>{showMessagingWidgetConversationField && messagingWidgetConversationFields}</label>
                 </div>
             </div>
+
             <div className='container'>
                 <h2 className='title'>SSO to Guide</h2>
                 <div className='button-group'>
                     <button className='primarybutton' onClick={handleAccessGuide}>Access Guide</button>
                 </div>
             </div>
+
             <div className='container'>
                 <h2 className='title'>Utilities</h2>
                 <div className='button-group'>
@@ -326,6 +274,6 @@ const MainPage = () => {
             </div>
         </>
     );
-}
+};
 
 export default MainPage;
