@@ -233,10 +233,10 @@ const MainPage = () => {
                         console.log("Error: " + error);
                     });
             }, function loginCallback(error) {
-                if (error) {
+                /*if (error) {
                     const { type, reason, message } = error
                     console.error(`Error logging in: ${type} - ${reason} - ${message}`)
-                }
+                }*/
             });
 
             window.zE('messenger:set', 'conversationTags', [
