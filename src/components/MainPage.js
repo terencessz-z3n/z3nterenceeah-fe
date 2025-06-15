@@ -1,278 +1,379 @@
-import React, { useEffect, useState } from 'react';
-import { Alert } from 'react-bootstrap';
-import Smooch from 'smooch';
-import UltimateChat from 'https://widget.ultimate.ai/sdk/index.mjs';
+import React, { useState, useEffect } from 'react';
+import { Container, Row, Col, Form, Button, Card, InputGroup, FormControl } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import {jwtDecode} from "jwt-decode";
 
 const MainPage = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [isFormValid, setIsFormValid] = useState(false);
-    const [locale, setLocale] = useState(null);
-    const [showMessagingWidgetConversationField, setShowMessagingWidgetConversationalField] = useState(false);
-    const [messagingWidgetConversationFields, setMessagingWidgetConversationalField] = useState('');
-    const [suncoTokenExists, setSuncoTokenExists] = useState(false);
-    const [messageToken, setMessageToken] = useState('');
+    const [newUserEmail, setNewUserEmail] = useState('');
+    const [newUserExternalIdPrefix, setNewUserExternalIdPrefix] = useState('');
+    const [newUserName, setNewUserName] = useState('');
+    const [newUserEmailVerified, setNewUserEmailVerified] = useState(false);
+    const [jwtExpiryMinutes, setJwtExpiryMinutes] = useState('NA');
+    const [adminJwtExpiryMinutes, setAdminJwtExpiryMinutes] = useState('NA');
+    const [jwtToken, setJwtToken] = useState(null);
+    const [decodedJwtToken, setDecodedJwtToken] = useState(null);
 
-    const handleMessagingWidgetAction = (action) => {
-        window.zE('messenger', action);
-    };
-
-    const handleMessagingWidgetLogout = () => {
-        window.zE('messenger', 'logoutUser');
-        sessionStorage.removeItem('messageToken');
-        setMessageToken('');
-    };
-
-    const handleMessagingWidgetLocale = (locale) => {
-        window.zE('messenger:set', 'locale', locale);
-    };
-
-    const handleMessagingWidgetConversationalFields = () => {
-        window.zE('messenger:set', 'conversationFields', [
-            { id: '32542768289945', value: 'This is a set conversation field test' }
-        ]);
-        setShowMessagingWidgetConversationalField(true);
-        setMessagingWidgetConversationalField(`window.zE('messenger:set', 'conversationFields', [{ id: '32542768289945', value: 'This is a set conversation field test' }])`);
-    };
-
-    const handleLocaleChange = (event) => {
-        setLocale(event.target.value);
-        handleMessagingWidgetLocale(event.target.value);
-    };
-
-    const handleSuncoWidgetAction = (action) => {
-        if (action === "open") Smooch.open();
-        if (action === "close") Smooch.close();
-    };
-
-    const handleSuncoWidgetLogout = () => {
-        Smooch.logout();
-        sessionStorage.removeItem('suncoToken');
-        setSuncoTokenExists(false);
-    };
-
-    const handleClearBrowserStorage = () => {
-        window.zE('messenger', 'logoutUser');
-        localStorage.clear();
-        sessionStorage.clear();
-        setMessageToken('');
-        setSuncoTokenExists(false);
-        window.location.reload();
-    };
-
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        if (name === 'email') setEmail(value);
-        if (name === 'password') setPassword(value);
-
-        const isValid = value.trim() !== '' && (name === 'email' ? password.trim() : email.trim()) !== '';
-        setIsFormValid(isValid);
-    };
-
-    const handleLogin = async (e) => {
-        e.preventDefault();
-
+    const handleNewUserLogin = async () => {
         try {
             const response = await fetch('http://localhost:3001/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({
+                    isAdmin: false,
+                    newUserEmail,
+                    newUserExternalIdPrefix,
+                    newUserName,
+                    newUserEmailVerified,
+                    jwtExpiryMinutes: jwtExpiryMinutes === 'NA' ? null : Number(jwtExpiryMinutes)
+                }),
             });
 
             const data = await response.json();
+            if (data.messageToken) {
+                const decodedJwtToken = jwtDecode(data.messageToken);
 
-            sessionStorage.setItem('messageToken', data.messageToken);
-            sessionStorage.setItem('suncoToken', data.suncoToken);
-            sessionStorage.setItem('email', email);
-            sessionStorage.setItem('password', password);
+                sessionStorage.setItem('jwtToken', data.messageToken);
+                sessionStorage.setItem('decodedJwtToken', JSON.stringify(decodedJwtToken));
+                sessionStorage.setItem('newUserEmail', newUserEmail);
+                sessionStorage.setItem('newUserExternalIdPrefix', newUserExternalIdPrefix);
+                sessionStorage.setItem('newUserName', newUserName);
+                sessionStorage.setItem('newUserEmailVerified', JSON.stringify(newUserEmailVerified));
+                sessionStorage.setItem('jwtExpiryMinutes', jwtExpiryMinutes);
+                sessionStorage.setItem('isAdmin', 'false');
 
-            setSuncoTokenExists(!!data.suncoToken);
-            setMessageToken(data.messageToken);
-
-            window.location.href = '/';
-        } catch (error) {
-            console.log(error);
-        }
-    };
-
-    const handleAccessGuide = async () => {
-        const messageToken = sessionStorage.getItem('messageToken');
-
-        try {
-            const response = await fetch(`http://localhost:3001/auth/jwtsso?return_to=https://z3ntscap.tstechlab.com/hc/en-us`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messageToken })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                window.location.href = data.redirectURL;
+                window.location.href = '/';
             } else {
-                console.error('Failed to get redirect URL');
+                console.error('No token returned');
             }
         } catch (error) {
             console.error(error);
         }
     };
 
-    const fetchJWTToken = async () => {
-        const email = sessionStorage.getItem('email');
-        const password = sessionStorage.getItem('password');
+    const handleAdminLogin = async () => {
+        try {
+            const response = await fetch('http://localhost:3001/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    isAdmin: true,
+                    adminJwtExpiryMinutes: adminJwtExpiryMinutes === 'NA' ? null : Number(adminJwtExpiryMinutes)
+                }),
+            });
 
-        const response = await fetch('http://localhost:3001/auth', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
+            const data = await response.json();
+
+            if (data.messageToken) {
+                const decodedJwtToken = jwtDecode(data.messageToken);
+
+                sessionStorage.setItem('jwtToken', data.messageToken);
+                sessionStorage.setItem('decodedJwtToken', JSON.stringify(decodedJwtToken));
+                sessionStorage.setItem('adminJwtExpiryMinutes', adminJwtExpiryMinutes);
+                sessionStorage.setItem('isAdmin', 'true');
+
+                window.location.href = '/';
+            } else {
+                console.error('No token returned');
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleSSOFromWebpageToHelpCenter = async () => {}
+
+    const fetchJWTToken = async () => {
+        let response;
+        const storedIsAdmin = sessionStorage.getItem('isAdmin');
+
+        if (storedIsAdmin === 'true') {
+            response = await fetch('http://localhost:3001/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    isAdmin: true,
+                    adminJwtExpiryMinutes: adminJwtExpiryMinutes === 'NA' ? null : Number(adminJwtExpiryMinutes)
+                })
+            })
+        } else {
+            const newUserEmail = sessionStorage.getItem('newUserEmail') || '';
+            const newUserExternalIdPrefix = sessionStorage.getItem('newUserExternalIdPrefix') || '';
+            const newUserName = sessionStorage.getItem('newUserName') || '';
+            const newUserEmailVerified = JSON.parse(sessionStorage.getItem('newUserEmailVerified') || 'false');
+            const jwtExpiryMinutesRaw = sessionStorage.getItem('jwtExpiryMinutes') || 'NA';
+            const jwtExpiryMinutes = jwtExpiryMinutesRaw === 'NA' ? null : Number(jwtExpiryMinutesRaw);
+
+            response = await fetch('http://localhost:3001/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    isAdmin: false,
+                    newUserEmail,
+                    newUserExternalIdPrefix,
+                    newUserName,
+                    newUserEmailVerified,
+                    jwtExpiryMinutes,
+                })
+            });
+        }
 
         return response.json();
     };
 
+    const handleCopy = () => {
+        navigator.clipboard.writeText(jwtToken);
+    };
+
+    const handleClearSessionStorage = () => {
+        window.zE('messenger', 'logoutUser');
+        localStorage.clear();
+        sessionStorage.clear();
+        setNewUserEmail('');
+        setNewUserExternalIdPrefix('');
+        setNewUserName('');
+        setNewUserEmailVerified(false);
+        setJwtExpiryMinutes('NA');
+        setAdminJwtExpiryMinutes('NA');
+        setJwtToken(null);
+        setDecodedJwtToken(null);
+    }
+
     useEffect(() => {
-        // Inject scripts and styles
-        const jqueryScript = document.createElement('script');
-        jqueryScript.src = 'https://code.jquery.com/jquery-3.3.1.js';
-        jqueryScript.integrity = 'sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=';
-        jqueryScript.crossOrigin = 'anonymous';
-        document.body.appendChild(jqueryScript);
+        const storedToken = sessionStorage.getItem('jwtToken');
+        const storedDecoded = sessionStorage.getItem('decodedJwtToken');
 
-        const bootstrapLink = document.createElement('link');
-        bootstrapLink.rel = 'stylesheet';
-        bootstrapLink.href = 'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
-        document.head.appendChild(bootstrapLink);
+        if (storedToken) setJwtToken(storedToken);
+        if (storedDecoded) setDecodedJwtToken(JSON.parse(storedDecoded));
+    }, []);
 
-        const biLink = document.createElement('link');
-        biLink.rel = 'stylesheet';
-        biLink.href = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css';
-        document.head.appendChild(biLink);
-
-        const script = document.createElement('script');
-        script.type = 'module';
-        script.src = 'https://widget.ultimate.ai/sdk/index.mjs';
-        script.onload = () => {
-            UltimateChat.Initialize({
-                botId: '6773849286d15fab7828f2c2',
-                theme: {
-                    'actions': '#4C67D3',
-                    'actions-hover': '#1833AB',
-                    'header-text': '#FFFFFF',
-                    'chat-button': '#151A1E',
-                    'header': '#063940',
-                    'chat-border-radius': '12px'
-                },
-                navbar: {
-                    avatarUrl: 'https://www.ultimate.ai/hubfs/raw_assets/public/ultimate/favicon/apple-touch-icon-152x152.png',
-                    title: 'AI agents (Ultimate)'
-                },
-                recoverConversation: true,
-                messageGeneratedAdditionalInfo: false,
-                showLlmSources: true,
-                showAIAnswerLabel: true,
-                allowSoundNotifications: true,
-                chatPosition: 'bottom-right'
-            });
-        };
-        document.body.appendChild(script);
-
+    useEffect(() => {
         const zendeskScript = document.createElement('script');
         zendeskScript.id = 'ze-snippet';
         zendeskScript.src = 'https://static.zdassets.com/ekr/snippet.js?key=6b8220bb-b66e-4385-bff3-c4185d610542';
         document.body.appendChild(zendeskScript);
 
-        setTimeout(() => {
-            const storedMessageToken = sessionStorage.getItem('messageToken');
-            const storedSuncoToken = sessionStorage.getItem('suncoToken');
+        const storedJwtToken  = sessionStorage.getItem('jwtToken');
 
-            setMessageToken(storedMessageToken || '');
-            setSuncoTokenExists(!!storedSuncoToken);
+        if(storedJwtToken) {
+            setTimeout(() => {
+                window.zE('messenger', 'loginUser', async function jwtCallback(callback) {
+                    fetchJWTToken()
+                        .then(data => {
+                            setJwtToken(data.messageToken);
+                            callback(data.messageToken);
+                        })
+                        .catch(error => console.log("Error: " + error));
+                });
 
-            window.zE('messenger', 'loginUser', async function jwtCallback(callback) {
-                fetchJWTToken()
-                    .then(data => {
-                        setMessageToken(data.messageToken);
-                        callback(data.messageToken);
-                    })
-                    .catch(error => console.log("Error: " + error));
-            });
-
-            window.zE('messenger:set', 'conversationTags', []);
-            window.zE('messenger:set', 'conversationFields', []);
-        }, 1000);
+                window.zE('messenger:set', 'conversationTags', []);
+                window.zE('messenger:set', 'conversationFields', []);
+            }, 1000);
+        }
     }, []);
 
     return (
-        <>
-            <header className='header'><h1>Dashboard</h1></header>
-            <div className='container'>
-                <h2 className='title'>Login</h2>
-                <form onSubmit={handleLogin}>
-                    <input type='text' name='email' placeholder='Username' value={email} onChange={handleInputChange} className='input-field' />
-                    <input type='password' name='password' placeholder='Password' value={password} onChange={handleInputChange} className='input-field' />
-                    <button type='submit' disabled={!isFormValid} className='primarybutton'>
-                        {isFormValid ? 'Login' : 'Please fill in credentials to login'}
-                    </button>
-                </form>
+        <Container className="mt-5 d-flex flex-column align-items-center">
+            <Row className="w-100 justify-content-center" style={{ maxWidth: '1200px' }}>
+                {/* JWT Token Display */}
+                <Col md={12} className="mb-4">
+                    <Card bg="info" text="white" className="p-3">
+                        <Card.Title>JWT Token</Card.Title>
+                        <InputGroup className="mb-3">
+                            <FormControl
+                                value={jwtToken || 'No token generated yet.'}
+                                readOnly
+                                style={{ wordBreak: 'break-all' }}
+                            />
+                            <Button variant="secondary" onClick={handleCopy} disabled={!jwtToken}>
+                                Copy
+                            </Button>
+                        </InputGroup>
 
-                {!!messageToken && (
-                    <Alert variant="info" style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', marginTop: '10px', position: 'relative', paddingRight: '40px' }}>
-                        <strong>Message Token:</strong><br />
-                        <span id="messageTokenText">{messageToken}</span>
-                        <i className="bi bi-clipboard" title="Copy to clipboard"
-                            style={{
-                                cursor: 'pointer',
-                                color: '#22616e',
-                                position: 'absolute',
-                                top: '10px',
-                                right: '10px',
-                                fontSize: '1.2rem',
-                            }}></i>
-                    </Alert>
-                )}
-            </div>
+                        {decodedJwtToken && typeof decodedJwtToken === 'object' && (
+                            <>
+                                <Card.Title>Decoded JWT Payload:</Card.Title>
+                                <div
+                                    style={{
+                                        backgroundColor: '#ffffff',
+                                        color: '#000',
+                                        borderRadius: '0.5rem',
+                                        padding: '1rem',
+                                        fontSize: '0.9rem',
+                                    }}
+                                >
+                                    {Object.entries(decodedJwtToken).map(([key, value]) => (
+                                        <div key={key} style={{ marginBottom: '0.25rem' }}>
+                                            <strong>{key}:</strong>{' '}
+                                            {typeof value === 'object' ? JSON.stringify(value) : value.toString()}
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </Card>
+                </Col>
 
-            <div className='container'>
-                <h2 className='title'>Zendesk Web Widget</h2>
-                <div className='group'>
-                    <button className='primarybutton' onClick={() => handleMessagingWidgetAction('open')}>Open</button>
-                    <button className='primarybutton' onClick={() => handleMessagingWidgetAction('close')}>Close</button>
-                    <button className='primarybutton' onClick={() => handleMessagingWidgetAction('show')}>Show</button>
-                    <button className='primarybutton' onClick={() => handleMessagingWidgetAction('hide')}>Hide</button>
-                    <button className='secondarybutton' onClick={handleMessagingWidgetLogout}>Logout</button>
-                </div>
-                <div className='group'>
-                    <button className='primarybutton' onClick={() => handleMessagingWidgetLocale(locale)}>Set Locale</button>
-                    <select className='dropdown rounded-dropdown' value={locale} onChange={handleLocaleChange}>
-                        <option value="en-US">en-US</option>
-                        <option value="fr">fr</option>
-                        <option value="ko">ko</option>
-                        <option value="de">de</option>
-                        <option value="es">es</option>
-                        <option value="vi">vi</option>
-                    </select>
-                </div>
-                <div className='group'>
-                    <button className='primarybutton' onClick={handleMessagingWidgetConversationalFields}>Set Conversational Fields</button>
-                </div>
-                <div className='group'>
-                    <label>{showMessagingWidgetConversationField && messagingWidgetConversationFields}</label>
-                </div>
-            </div>
+                {/* Container A */}
+                <Col md={6} className="mb-4">
+                    <Card bg="light" className="p-4">
+                        <Card.Title>User Login</Card.Title>
+                        <Card.Text>This will create a new user and login</Card.Text>
+                        <Form>
+                            <Row>
+                                <Col>
+                                    <Form.Group className="mb-3" controlId="formEmailA">
+                                        <Form.Label>Email Address</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            value={newUserEmail}
+                                            onChange={(e) => setNewUserEmail(e.target.value)}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col>
+                                    <Form.Group className="mb-3" controlId="formNameA">
+                                        <Form.Label>Name</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            value={newUserName}
+                                            onChange={(e) => setNewUserName(e.target.value)}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
 
-            <div className='container'>
-                <h2 className='title'>SSO to Guide</h2>
-                <div className='button-group'>
-                    <button className='primarybutton' onClick={handleAccessGuide}>Access Guide</button>
-                </div>
-            </div>
+                            <Form.Group className="mb-3" controlId="formExternalIdA">
+                                <Form.Label>External ID Prefix</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    value={newUserExternalIdPrefix}
+                                    onChange={(e) => setNewUserExternalIdPrefix(e.target.value)}
+                                />
+                            </Form.Group>
 
-            <div className='container'>
-                <h2 className='title'>Utilities</h2>
-                <div className='button-group'>
-                    <button className='primarybutton' onClick={handleClearBrowserStorage}>Clear Browser Storage</button>
-                </div>
-            </div>
-        </>
+                            <Row>
+                                <Col>
+                                    <Form.Group className="mb-3" controlId="formJwtExpiryA">
+                                        <Form.Label>JWT Expiry (minutes)</Form.Label>
+                                        <Form.Select
+                                            value={jwtExpiryMinutes}
+                                            onChange={(e) => setJwtExpiryMinutes(e.target.value)}
+                                        >
+                                            <option value="NA">NA</option>
+                                            {Array.from({ length: 60 }, (_, i) => (
+                                                <option key={i + 1} value={(i + 1).toString()}>
+                                                    {i + 1}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                                <Col className="d-flex align-items-end">
+                                    <Form.Group className="mb-3" controlId="formEmailVerifiedA">
+                                        <Form.Check
+                                            type="checkbox"
+                                            label="Email Verified?"
+                                            checked={newUserEmailVerified}
+                                            onChange={(e) => setNewUserEmailVerified(e.target.checked)}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+
+                            <Button variant="dark" onClick={handleNewUserLogin} className="float-end">
+                                Login
+                            </Button>
+                        </Form>
+                    </Card>
+                </Col>
+
+                {/* Container B */}
+                <Col md={6} className="mb-4">
+                    <Card bg="dark" text="white" className="p-4">
+                        <Card.Title>Admin Login</Card.Title>
+                        <Card.Text>This will use the admin credential for quick login</Card.Text>
+                        <Form>
+                            <Row>
+                                <Col>
+                                    <Form.Group className="mb-3" controlId="formEmailB">
+                                        <Form.Label>Email Address</Form.Label>
+                                        <Form.Control type="text" value="admin@email.com" readOnly />
+                                    </Form.Group>
+                                </Col>
+                                <Col>
+                                    <Form.Group className="mb-3" controlId="formNameB">
+                                        <Form.Label>Name</Form.Label>
+                                        <Form.Control type="text" value="Administrator" readOnly />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+
+                            <Form.Group className="mb-3" controlId="formExternalIdB">
+                                <Form.Label>External ID</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    value="admin-01976f0f-1ab5-7d63-b123-8e84e9637b5f"
+                                    readOnly
+                                />
+                            </Form.Group>
+
+                            <Row>
+                                <Col>
+                                    <Form.Group className="mb-3" controlId="formJwtExpiryB">
+                                        <Form.Label>JWT Expiry (minutes)</Form.Label>
+                                        <Form.Select
+                                            value={adminJwtExpiryMinutes}
+                                            onChange={(e) => setAdminJwtExpiryMinutes(e.target.value)}
+                                        >
+                                            <option value="NA">NA</option>
+                                            {Array.from({ length: 60 }, (_, i) => (
+                                                <option key={i + 1} value={(i + 1).toString()}>
+                                                    {i + 1}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                                <Col className="d-flex align-items-end">
+                                    <Form.Group className="mb-3" controlId="formEmailVerifiedB">
+                                        <Form.Check
+                                            type="checkbox"
+                                            label="Email Verified?"
+                                            checked={true}
+                                            readOnly
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+
+                            <Button variant="light" onClick={handleAdminLogin} className="float-end">
+                                Login
+                            </Button>
+                        </Form>
+                    </Card>
+                </Col>
+
+                {/* Utilities Display */}
+                <Col md={12} className="mb-4">
+                    <Card border="primary" text="black" className="p-3">
+                        <Card.Title>Others</Card.Title>
+                        <Button variant="primary" onClick={handleSSOFromWebpageToHelpCenter} disabled={!jwtToken}>
+                            SSO From WebPage to Help Center
+                        </Button>
+                    </Card>
+                </Col>
+
+                {/* Utilities Display */}
+                <Col md={12} className="mb-4">
+                    <Card border="danger" text="black" className="p-3">
+                        <Card.Title>Utilities</Card.Title>
+                        <Button variant="danger" onClick={handleClearSessionStorage} disabled={!jwtToken}>
+                            Clear Session Storage
+                        </Button>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
     );
 };
 
